@@ -1,0 +1,39 @@
+# Dependencies and build cache
+node_modules
+build
+*.tsbuildinfo
+
+# Source-only files
+src
+test
+
+# Local and generated website content
+content
+images
+public
+
+# Tooling and local config
+.github
+.idea
+.vscode
+.cache
+.DS_Store
+biome.json
+bunfig.toml
+tsconfig.json
+tsconfig.lib.json
+
+# Package manager and environment files
+bun.lock
+bun.lockb
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.env
+.env.*
+.npmrc
+
+# Logs and archives
+logs
+*.log
+*.tgz
