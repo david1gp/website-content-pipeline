@@ -1,0 +1,55 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Bun package managers
+bun.lock
+bun.lockb
+
+# Output
+out
+dist
+*.tgz
+/build/
+
+# Code coverage
+coverage
+*.lcov
+
+# Logs
+logs
+_.log
+report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+
+# System and editor files
+.DS_Store
+.cache
+.eslintcache
+*.tsbuildinfo
+.idea
+.vscode
+*.code-workspace
+
+# Package manager debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Dotenv secrets
+.env
+.env.*
+.npmrc
+
+# Generated local content folders
+/content
+/images
+/public
+
+# ai, ethereal and auto generated
+.roo/rules-code
+AGENTS.md

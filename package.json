@@ -1,0 +1,64 @@
+{
+  "name": "@adaptive-ds/website-content-pipeline",
+  "version": "0.1.0",
+  "description": "Markdown content processing pipeline for scheduled website articles, generated content lists, raw public content, and featured images.",
+  "homepage": "https://github.com/david1gp/website-content-pipeline",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/david1gp/website-content-pipeline.git"
+  },
+  "bugs": {
+    "url": "https://github.com/david1gp/website-content-pipeline/issues"
+  },
+  "keywords": [
+    "content-pipeline",
+    "markdown",
+    "frontmatter",
+    "seo",
+    "scheduled-content",
+    "rclone",
+    "website-content"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./*.js": {
+      "import": "./dist/*.js",
+      "types": "./dist/*.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "rm -rf ./dist && bun tsc -p ./tsconfig.lib.json",
+    "typecheck": "bunx tsgo --noEmit",
+    "format": "bunx biome check --write src"
+  },
+  "dependencies": {
+    "@adaptive-ds/assets-optimizer": "^0.6.1",
+    "gray-matter": "^4.0.3",
+    "marked": "^18.0.4",
+    "valibot": "^1.4.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.11",
+    "@types/bun": "latest",
+    "@types/node": "^25.9.1",
+    "typescript": "~6.0.3"
+  },
+  "prettier": {
+    "semi": false,
+    "printWidth": 120,
+    "trailingComma": "all"
+  }
+}
