@@ -1,8 +1,7 @@
 import { cpSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { dirname, isAbsolute, join, relative, resolve } from "node:path"
 import { bisync, runRclone } from "@adaptive-ds/assets-optimizer"
 import matter from "gray-matter"
-import { marked } from "marked"
 import { parse } from "valibot"
 import { assignOptimizedImagePaths } from "./assignOptimizedImagePaths.js"
 import { cleanFrontmatter } from "./cleanFrontmatter.js"
@@ -20,6 +19,12 @@ import { optimizeContentImages } from "./optimizeContentImages.js"
 import { parseContentFilename } from "./parseContentFilename.js"
 import { parseContentProcessFlags } from "./parseContentProcessFlags.js"
 import type { ContentEntry, ContentProcessOptions, ContentProcessResult, MissingImage } from "./types.js"
+
+function projectRelativePath(cwd: string, path: string) {
+  const absolutePath = isAbsolute(path) ? path : resolve(cwd, path)
+  const normalized = relative(cwd, absolutePath).replace(/\\/g, "/")
+  return normalized.startsWith(".") ? normalized : `./${normalized}`
+}
 
 export async function contentProcess(
   options: ContentProcessOptions,
@@ -111,13 +116,16 @@ export async function contentProcess(
 
     const normalized = matter.stringify(parsed.content || "", normalizedFrontmatter)
     writeFileSync(filePath, normalized, "utf-8")
-    cpSync(filePath, join(config.publicContentDir, file))
+    const publicContentFilePath = join(config.publicContentDir, file)
+    if (resolve(config.cwd, filePath) !== resolve(config.cwd, publicContentFilePath)) {
+      cpSync(filePath, publicContentFilePath)
+    }
 
     entries.push({
       id: parsedFilename.id,
       slug: frontmatter.slug,
       path: `${config.publicPathBase}/${frontmatter.slug}`,
-      contentPath: `${config.publicContentPathBase}/${file}`,
+      contentPath: projectRelativePath(config.cwd, publicContentFilePath),
       image: imageKey,
       imagePath: null,
       title: frontmatter.title,
@@ -126,8 +134,6 @@ export async function contentProcess(
       updatedAt: frontmatter.updatedAt ?? null,
       author: frontmatter.author ?? null,
       imageAlt: frontmatter.imageAlt ?? null,
-      body: parsed.content || "",
-      html: marked(parsed.content || "") as string,
       isPublishedAtBuild: frontmatter.publishedAt < config.buildDate,
     })
 

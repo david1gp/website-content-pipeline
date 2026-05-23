@@ -20,8 +20,6 @@ export function generateContentListCode(options: {
     updatedAt: ${JSON.stringify(entry.updatedAt)},
     author: ${JSON.stringify(entry.author)},
     imageAlt: ${JSON.stringify(entry.imageAlt)},
-    body: ${JSON.stringify(entry.body)},
-    html: ${JSON.stringify(entry.html)},
     isPublishedAtBuild: ${entry.isPublishedAtBuild},
   }`,
     )

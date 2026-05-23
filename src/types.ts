@@ -13,8 +13,6 @@ export type ContentEntry = {
   updatedAt: string | null
   author: string | null
   imageAlt: string | null
-  body: string
-  html: string
   isPublishedAtBuild: boolean
 }
 
@@ -38,9 +36,10 @@ export type MissingImage = {
 
 export type ContentProcessOptions = {
   contentDir: string
-  publicBlogDir: string
+  contentSection?: string
+  publicBlogDir?: string
   publicContentDir?: string
-  publicPathBase: string
+  publicPathBase?: string
   publicContentPathBase?: string
   imagePromptsDir: string
   contentListOutputPath: string
@@ -63,6 +62,7 @@ export type NormalizedContentProcessOptions = Required<
   Pick<
     ContentProcessOptions,
     | "contentDir"
+    | "contentSection"
     | "publicBlogDir"
     | "publicContentDir"
     | "publicPathBase"

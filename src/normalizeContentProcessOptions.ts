@@ -8,13 +8,16 @@ import { normalizePublicPathBase } from "./normalizePublicPathBase.js"
 import type { ContentProcessOptions, NormalizedContentProcessOptions } from "./types.js"
 
 export function normalizeContentProcessOptions(options: ContentProcessOptions): NormalizedContentProcessOptions {
-  const publicPathBase = normalizePublicPathBase(options.publicPathBase)
-  const publicContentPathBase = normalizePublicPathBase(options.publicContentPathBase ?? `${publicPathBase}/content`)
+  const contentSection = (options.contentSection ?? options.publicPathBase ?? "blog").replace(/^\/+|\/+$/g, "")
+  const publicPathBase = normalizePublicPathBase(options.publicPathBase ?? `/${contentSection}`)
+  const publicBlogDir = options.publicBlogDir ?? join("./public", contentSection)
+  const publicContentPathBase = normalizePublicPathBase(options.publicContentPathBase ?? publicPathBase)
 
   return {
     contentDir: options.contentDir,
-    publicBlogDir: options.publicBlogDir,
-    publicContentDir: options.publicContentDir ?? join(options.publicBlogDir, "content"),
+    contentSection,
+    publicBlogDir,
+    publicContentDir: options.publicContentDir ?? publicBlogDir,
     publicPathBase,
     publicContentPathBase,
     imagePromptsDir: options.imagePromptsDir,

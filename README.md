@@ -8,7 +8,7 @@ Reusable markdown content pipeline for websites that publish scheduled articles 
 - normalizes missing frontmatter and writes it back to the markdown file
 - validates frontmatter with `valibot`
 - copies raw markdown files to a public content folder
-- generates a typed `contentList.ts`
+- generates a typed `contentList.ts` with metadata and markdown file paths
 - marks future-dated content as rendered but not published at build time
 - detects missing featured images and creates prompt files
 - can ask `codex` to generate missing images, with an ImageMagick fallback
@@ -31,15 +31,18 @@ Create a project-local script such as `src/app/content/contentProcess.ts`:
 import { contentProcess } from "@adaptive-ds/website-content-pipeline"
 
 await contentProcess({
-  contentDir: "./content",
-  publicBlogDir: "./public/blog",
-  publicPathBase: "/blog",
+  contentSection: "blog",
+  contentDir: "./public/blog",
   imagePromptsDir: "./src/app/content/image-prompts",
   contentListOutputPath: "./src/app/content/contentList.ts",
   imageOriginalsDir: "./images",
   imageOptimizedDir: "./public/images",
 })
 ```
+
+`contentSection` controls the default public URL and output folder. For example, `contentSection: "blog"` defaults to `publicPathBase: "/blog"`, `publicBlogDir: "./public/blog"`, and `publicContentDir: "./public/blog"`. Use another section such as `"articles"` or `"ratgeber"` for websites that publish under a different route.
+
+If you need separate source and public folders, pass `contentDir` and `publicContentDir` explicitly. The generated `contentPath` always points to the markdown file that should be read by the website at build/render time.
 
 Then add a script:
 
@@ -78,6 +81,10 @@ The generated list exports:
 - `publishedContent()`
 
 Future-dated entries are included in `contentList`, so static routes can render them, but `publishedContent()` filters them out for indexes, links, sitemap generation, and other public listing surfaces.
+
+`contentList` intentionally does not include markdown body or rendered HTML. Each entry includes `contentPath`, a project-relative path such as `./public/blog/2026-05-20-example-post.md`, so the website can read the source markdown and strip frontmatter at render/build time.
+
+If the source markdown already lives in the public section folder, for example `contentDir: "./public/blog"`, the pipeline writes normalized frontmatter in place and avoids copying the file onto itself.
 
 ## Image Convention
 
