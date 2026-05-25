@@ -15,6 +15,107 @@ Reusable markdown content pipeline for websites that publish scheduled articles 
 - optimizes content images through `@adaptive-ds/assets-optimizer`
 - optionally syncs source content and public content with `rclone`
 
+## Diagrams
+
+### End-To-End Pipeline
+
+```mermaid
+flowchart TB
+  A[Markdown drafts<br/>public/blog/*.md] --> B[contentProcess]
+  B --> C[Normalize frontmatter]
+  B --> D[Validate metadata<br/>Valibot]
+  B --> E[Detect or create images]
+  C --> F[Write normalized markdown]
+  D --> G[Generate contentList.ts]
+  E --> H[Optimize images<br/>public/images/*.webp]
+  F --> I[Public markdown files]
+  G --> J[Website build]
+  H --> J
+  I --> J
+  J --> K[Article pages]
+  J --> L[Index pages]
+  J --> M[Sitemap and robots]
+```
+
+The package owns content processing and metadata generation. The website owns route rendering, SEO head generation, and final page composition.
+
+### Project Integration
+
+```mermaid
+flowchart TB
+  A[package.json] --> A1[content:process]
+  A --> A2[content:process:local]
+  A --> A3[build runs content first]
+
+  B[src/app/content/contentProcess.ts] --> C[adaptive-ds/website-content-pipeline]
+  C --> D[src/app/content/contentList.ts]
+  C --> E[public/&lt;section&gt;/*.md]
+  C --> F[public/images/*.webp]
+
+  D --> G[Route index<br/>publishedContent]
+  D --> H[Article route<br/>contentBySlug]
+  E --> I[contentRead in website]
+  I --> H
+  F --> H
+  F --> G
+
+  A1 --> B
+  A2 --> B
+  A3 --> B
+```
+
+Typical integration calls the pipeline before SEO generation and before the framework build.
+
+### Generated Content List Contract
+
+```mermaid
+flowchart LR
+  A[contentList.ts] --> B[Included metadata]
+  B --> B1[id]
+  B --> B2[slug]
+  B --> B3[path]
+  B --> B4[contentPath]
+  B --> B5[imagePath]
+  B --> B6[title and description]
+  B --> B7[publishedAt and updatedAt]
+  B --> B8[isPublishedAtBuild]
+
+  A --> C[Excluded content]
+  C -. not generated .-> C1[body]
+  C -. not generated .-> C2[html]
+
+  B4 --> D[Website reads markdown file]
+  D --> E[Strip frontmatter]
+  E --> F[Render markdown in app]
+```
+
+The generated TypeScript stays small and framework-neutral. Consumers read markdown from `contentPath` when they render or prerender article pages.
+
+### Build-Time Scheduling
+
+```mermaid
+flowchart LR
+  A[Build date] --> B{publishedAt < buildDate?}
+
+  B -->|yes| C[Published article]
+  C --> C1[Render page]
+  C --> C2[List on index]
+  C --> C3[Include in sitemap]
+  C --> C4[robots: index, follow]
+
+  B -->|no| D[Future article]
+  D --> D1[Render page]
+  D --> D2[Do not list]
+  D --> D3[Omit from sitemap]
+  D --> D4[robots: noindex, nofollow]
+
+  E[Later publication] --> F[Run pipeline again]
+  F --> G[Rebuild website]
+```
+
+Publishing future articles is intentionally tied to a later rebuild.
+
+
 ## Install
 
 ```bash
