@@ -1,4 +1,4 @@
-import { join } from "node:path"
+import { isAbsolute, join, resolve } from "node:path"
 import {
   DEFAULT_CONTENT_CACHE_CONTROL,
   DEFAULT_CONTENT_LIST_GENERATED_BY,
@@ -7,27 +7,32 @@ import { getBuildDate } from "./getBuildDate.js"
 import { normalizePublicPathBase } from "./normalizePublicPathBase.js"
 import type { ContentProcessOptions, NormalizedContentProcessOptions } from "./types.js"
 
+function resolveFromCwd(cwd: string, path: string): string {
+  return isAbsolute(path) ? path : resolve(cwd, path)
+}
+
 export function normalizeContentProcessOptions(options: ContentProcessOptions): NormalizedContentProcessOptions {
+  const cwd = resolve(options.cwd ?? process.cwd())
   const contentSection = (options.contentSection ?? options.publicPathBase ?? "blog").replace(/^\/+|\/+$/g, "")
   const publicPathBase = normalizePublicPathBase(options.publicPathBase ?? `/${contentSection}`)
   const publicBlogDir = options.publicBlogDir ?? join("./public", contentSection)
   const publicContentPathBase = normalizePublicPathBase(options.publicContentPathBase ?? publicPathBase)
 
   return {
-    contentDir: options.contentDir,
+    contentDir: resolveFromCwd(cwd, options.contentDir),
     contentSection,
-    publicBlogDir,
-    publicContentDir: options.publicContentDir ?? publicBlogDir,
+    publicBlogDir: resolveFromCwd(cwd, publicBlogDir),
+    publicContentDir: resolveFromCwd(cwd, options.publicContentDir ?? publicBlogDir),
     publicPathBase,
     publicContentPathBase,
-    imagePromptsDir: options.imagePromptsDir,
-    contentListOutputPath: options.contentListOutputPath,
-    imageOriginalsDir: options.imageOriginalsDir,
-    imageOptimizedDir: options.imageOptimizedDir,
+    imagePromptsDir: resolveFromCwd(cwd, options.imagePromptsDir),
+    contentListOutputPath: resolveFromCwd(cwd, options.contentListOutputPath),
+    imageOriginalsDir: resolveFromCwd(cwd, options.imageOriginalsDir),
+    imageOptimizedDir: resolveFromCwd(cwd, options.imageOptimizedDir),
     sourceRemote: options.sourceRemote,
     destinationRemote: options.destinationRemote,
     cacheControl: options.cacheControl ?? DEFAULT_CONTENT_CACHE_CONTROL,
-    cwd: options.cwd ?? process.cwd(),
+    cwd,
     buildDate: options.buildDate ?? getBuildDate(),
     logLevel: options.logLevel ?? 3,
     optimizeImages: options.optimizeImages ?? true,
