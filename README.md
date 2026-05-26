@@ -11,7 +11,7 @@ Reusable markdown content pipeline for websites that publish scheduled articles 
 - generates a typed `contentList.ts` with metadata and markdown file paths
 - marks future-dated content as rendered but not published at build time
 - detects missing featured images and creates prompt files
-- can ask `codex` to generate missing images, with an ImageMagick fallback
+- can ask a codex-lb image endpoint to generate missing images, falling back to local `codex`
 - optimizes content images through `@adaptive-ds/assets-optimizer`
 - optionally syncs source content and public content with `rclone`
 
@@ -138,6 +138,8 @@ await contentProcess({
   contentListOutputPath: "./src/app/content/contentList.ts",
   imageOriginalsDir: "./images",
   imageOptimizedDir: "./public/images",
+  imageGenerationSize: "1920x960",
+  imagePromptTemplatePrefix: "Generate image, resolution 1920x960, aspect ratio 2:1 for a website hero.",
 })
 ```
 
@@ -197,11 +199,15 @@ images/
     2026-05-20-example-post.jpg
 ```
 
-When an image is missing, the fallback image target is:
+When an image is missing, the generated image target is:
 
 ```text
-images/1920x1080_webp/{imageKey}.jpg
+images/1920x960_webp/{imageKey}.png
 ```
+
+Set `codexLbUrl` or `CODEX_LB_URL` to use an OpenAI-compatible codex-lb image endpoint first. The API token is read from `CODEX_LB_API_TOKEN` or `~/.config/opencode/codex-lb-api-key`. If codex-lb fails, the pipeline falls back to local `codex`. If one missing image cannot be generated, remaining image-generation attempts are skipped for that run.
+
+Generated image prompts use a configurable `imagePromptTemplatePrefix`, then pass the article title as `Article headline/title`. The article body is not included in image prompts. The default target and generation size is `1920x960` for 2:1 website hero images; override `imageGenerationSize` or `CONTENT_IMAGE_GENERATION_SIZE` if your image endpoint requires another size.
 
 ## Sync Flags
 
@@ -210,10 +216,10 @@ The `contentProcess()` helper understands these CLI flags from `process.argv`:
 - `--sync`: sync local content from `sourceRemote` and sync public content to `destinationRemote`
 - `--resync`: pass `--resync` to `rclone bisync`
 - `--strict`: exit on recoverable validation, sync, or optimization errors
+- `--index=2` or `--number=2`: only attempt missing-image generation for the selected 1-based article while still rebuilding the full content list
 
 ## Requirements
 
 - `bun`
 - `rclone` for sync mode
-- `codex` if enabled and available for image generation
-- `magick` for deterministic fallback images
+- codex-lb credentials or local `codex` if image generation is enabled

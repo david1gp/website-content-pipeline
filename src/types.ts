@@ -26,6 +26,7 @@ export type ContentProcessFlags = {
   sync: boolean
   resync: boolean
   strict: boolean
+  articleIndex: number | null
 }
 
 export type MissingImage = {
@@ -55,6 +56,9 @@ export type ContentProcessOptions = {
   generateMissingImages?: boolean
   generateImagePrompts?: boolean
   runCodexImageGeneration?: boolean
+  codexLbUrl?: string
+  imageGenerationSize?: string
+  imagePromptTemplatePrefix?: string
   contentListGeneratedBy?: string
 }
 
@@ -79,6 +83,9 @@ export type NormalizedContentProcessOptions = Required<
     | "generateMissingImages"
     | "generateImagePrompts"
     | "runCodexImageGeneration"
+    | "codexLbUrl"
+    | "imageGenerationSize"
+    | "imagePromptTemplatePrefix"
     | "contentListGeneratedBy"
   >
 > &

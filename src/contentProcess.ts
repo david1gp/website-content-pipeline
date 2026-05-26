@@ -26,6 +26,20 @@ function projectRelativePath(cwd: string, path: string) {
   return normalized.startsWith(".") ? normalized : `./${normalized}`
 }
 
+function writeImagePromptFile(options: {
+  imagePromptsDir: string
+  imageKey: string
+  prompt: string
+  targetPath: string
+  logLevel: ContentProcessOptions["logLevel"]
+}) {
+  ensureDir(options.imagePromptsDir)
+  const promptFile = join(options.imagePromptsDir, `${options.imageKey}.md`)
+  const promptContent = `# Image Generation Prompt: ${options.imageKey}\n\n${options.prompt}\n\nTarget file: ${options.targetPath}\n`
+  writeFileSync(promptFile, promptContent, "utf-8")
+  log(options.logLevel ?? 3, 2, "contentProcess", `Created image prompt: ${promptFile}`)
+}
+
 export async function contentProcess(
   options: ContentProcessOptions,
   argv: string[] = process.argv,
@@ -56,6 +70,15 @@ export async function contentProcess(
     .filter((file) => file.endsWith(".md"))
     .sort()
 
+  if (flags.articleIndex !== null) {
+    const selected = contentFiles[flags.articleIndex - 1]
+    if (!selected) {
+      log(config.logLevel, 0, "contentProcess", `No content file found for --index=${flags.articleIndex}; no image generation will run.`)
+    } else {
+      log(config.logLevel, 2, "contentProcess", `Generating missing image only for article #${flags.articleIndex}: ${selected}`)
+    }
+  }
+
   if (contentFiles.length === 0) {
     log(config.logLevel, 1, "contentProcess", "No .md files found in content/. Skipping.")
     return { buildDate: config.buildDate, entries: [], missingImages: [] }
@@ -66,7 +89,7 @@ export async function contentProcess(
   const entries: ContentEntry[] = []
   const missingImages: MissingImage[] = []
 
-  for (const file of contentFiles) {
+  for (const [fileIndex, file] of contentFiles.entries()) {
     const filePath = join(config.contentDir, file)
     const raw = readFileSync(filePath, "utf-8")
     const parsed = matter(raw)
@@ -90,6 +113,11 @@ export async function contentProcess(
 
     const imageKey = frontmatter.image ?? parsedFilename.id
     const hasSourceImage = findSourceImage(config.imageOriginalsDir, imageKey)
+    const imagePrompt = createImagePrompt(frontmatter, parsed.content, {
+      imagePromptTemplatePrefix: config.imagePromptTemplatePrefix,
+    })
+    const targetPath = join(config.imageOriginalsDir, DEFAULT_CONTENT_IMAGE_TRANSFORM_DIR, `${imageKey}.png`)
+    const imageAlt = frontmatter.imageAlt ?? (!hasSourceImage ? `Symbolbild zu ${frontmatter.title}` : null)
     log(
       config.logLevel,
       3,
@@ -97,10 +125,20 @@ export async function contentProcess(
       `Image check for ${parsedFilename.id}: imageKey=${imageKey}, hasSourceImage=${hasSourceImage !== null}`,
     )
 
-    if (config.generateMissingImages && !hasSourceImage) {
-      const targetPath = join(config.imageOriginalsDir, DEFAULT_CONTENT_IMAGE_TRANSFORM_DIR, `${imageKey}.jpg`)
+    const shouldGenerateImageForArticle = flags.articleIndex === null || flags.articleIndex === fileIndex + 1
+    if (config.generateImagePrompts) {
+      writeImagePromptFile({
+        imagePromptsDir: config.imagePromptsDir,
+        imageKey,
+        prompt: imagePrompt,
+        targetPath,
+        logLevel: config.logLevel,
+      })
+    }
+
+    if (config.generateMissingImages && !hasSourceImage && shouldGenerateImageForArticle) {
       log(config.logLevel, 2, "contentProcess", `Adding missing image: ${imageKey}`)
-      missingImages.push({ imageKey, prompt: createImagePrompt(frontmatter), targetPath })
+      missingImages.push({ imageKey, prompt: imagePrompt, targetPath })
     }
 
     const normalizedFrontmatter = cleanFrontmatter({
@@ -133,7 +171,7 @@ export async function contentProcess(
       publishedAt: frontmatter.publishedAt,
       updatedAt: frontmatter.updatedAt ?? null,
       author: frontmatter.author ?? null,
-      imageAlt: frontmatter.imageAlt ?? null,
+      imageAlt,
       isPublishedAtBuild: frontmatter.publishedAt < config.buildDate,
     })
 
@@ -146,13 +184,19 @@ export async function contentProcess(
   }
 
   for (const missingImage of missingImages) {
-    await generateMissingImage(missingImage, {
+    const imageGenerated = await generateMissingImage(missingImage, {
       cwd: config.cwd,
       imagePromptsDir: config.imagePromptsDir,
       logLevel: config.logLevel,
       generateImagePrompts: config.generateImagePrompts,
       runCodexImageGeneration: config.runCodexImageGeneration,
+      codexLbUrl: config.codexLbUrl,
+      imageGenerationSize: config.imageGenerationSize,
     })
+    if (!imageGenerated) {
+      log(config.logLevel, 0, "contentProcess", `Stopping missing-image generation after failure for: ${missingImage.imageKey}`)
+      break
+    }
   }
 
   if (config.optimizeImages) {

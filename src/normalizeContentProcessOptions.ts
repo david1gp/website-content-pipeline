@@ -1,8 +1,10 @@
 import { isAbsolute, join, resolve } from "node:path"
 import {
   DEFAULT_CONTENT_CACHE_CONTROL,
+  DEFAULT_CONTENT_IMAGE_GENERATION_SIZE,
   DEFAULT_CONTENT_LIST_GENERATED_BY,
 } from "./defaults.js"
+import { DEFAULT_IMAGE_PROMPT_TEMPLATE_PREFIX } from "./createImagePrompt.js"
 import { getBuildDate } from "./getBuildDate.js"
 import { normalizePublicPathBase } from "./normalizePublicPathBase.js"
 import type { ContentProcessOptions, NormalizedContentProcessOptions } from "./types.js"
@@ -39,6 +41,10 @@ export function normalizeContentProcessOptions(options: ContentProcessOptions): 
     generateMissingImages: options.generateMissingImages ?? true,
     generateImagePrompts: options.generateImagePrompts ?? true,
     runCodexImageGeneration: options.runCodexImageGeneration ?? true,
+    codexLbUrl: options.codexLbUrl ?? process.env.CODEX_LB_URL ?? "",
+    imageGenerationSize:
+      options.imageGenerationSize ?? process.env.CONTENT_IMAGE_GENERATION_SIZE ?? DEFAULT_CONTENT_IMAGE_GENERATION_SIZE,
+    imagePromptTemplatePrefix: options.imagePromptTemplatePrefix ?? DEFAULT_IMAGE_PROMPT_TEMPLATE_PREFIX,
     contentListGeneratedBy: options.contentListGeneratedBy ?? DEFAULT_CONTENT_LIST_GENERATED_BY,
   }
 }
