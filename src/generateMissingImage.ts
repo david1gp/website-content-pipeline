@@ -8,6 +8,8 @@ import type { LogLevel, MissingImage } from "./types.js"
 
 const DEFAULT_CODEX_LB_MODEL = "gpt-image-2" as const
 const DEFAULT_CODEX_LB_KEY_FILE = `${process.env.HOME ?? ""}/.config/opencode/codex-lb-api-key`
+const IMAGE_GENERATION_ATTEMPTS = 3
+const IMAGE_GENERATION_TIMEOUT_MS = 5 * 60 * 1000
 
 function isValidImage(path: string): boolean {
   if (!existsSync(path)) return false
@@ -49,6 +51,7 @@ async function generateViaCodexLb(options: {
   const baseUrl = options.codexLbUrl.replace(/\/+$/, "")
   const response = await fetch(`${baseUrl}/images/generations`, {
     method: "POST",
+    signal: AbortSignal.timeout(IMAGE_GENERATION_TIMEOUT_MS),
     headers: {
       Authorization: `Bearer ${apiToken}`,
       "Content-Type": "application/json",
@@ -131,7 +134,7 @@ Target path: ${options.targetPathAbsolute}`
       options.targetDir,
       codexPrompt,
     ],
-    { stdio: ["ignore", "pipe", "pipe"], timeout: 900000 },
+    { stdio: ["ignore", "pipe", "pipe"], timeout: IMAGE_GENERATION_TIMEOUT_MS },
   )
 
   let stderr = ""
@@ -143,15 +146,17 @@ Target path: ${options.targetPathAbsolute}`
     stderr += String(chunk)
   })
 
-  const exited = await Promise.race([
-    new Promise<number | null>((resolve) => proc.on("close", resolve)),
-    new Promise<null>((resolve) =>
-      setTimeout(() => {
-        proc.kill()
-        resolve(null)
-      }, 900000),
-    ),
-  ])
+  const exited = await new Promise<number | null>((resolve) => {
+    const timeout = setTimeout(() => {
+      proc.kill()
+      resolve(null)
+    }, IMAGE_GENERATION_TIMEOUT_MS)
+
+    proc.on("close", (code) => {
+      clearTimeout(timeout)
+      resolve(code)
+    })
+  })
 
   if (exited === 0 && isValidImage(options.targetPathAbsolute)) {
     log(options.logLevel, 2, "contentProcess", `Codex created: ${options.targetPathAbsolute}`)
@@ -203,34 +208,43 @@ export async function generateMissingImage(
   }
 
   if (options.runCodexImageGeneration) {
-    try {
-      if (options.codexLbUrl) {
-        log(options.logLevel, 2, "contentProcess", `Attempting codexLb image generation for: ${imageKey}`)
-        const codexLbSuccess = await generateViaCodexLb({
-          codexLbUrl: options.codexLbUrl,
+    for (let attempt = 1; attempt <= IMAGE_GENERATION_ATTEMPTS; attempt++) {
+      try {
+        if (attempt > 1) {
+          log(options.logLevel, 1, "contentProcess", `Retrying image generation for ${imageKey} (${attempt}/${IMAGE_GENERATION_ATTEMPTS})`)
+        }
+
+        if (options.codexLbUrl) {
+          log(options.logLevel, 2, "contentProcess", `Attempting codexLb image generation for: ${imageKey}`)
+          const codexLbSuccess = await generateViaCodexLb({
+            codexLbUrl: options.codexLbUrl,
+            prompt: promptText,
+            targetPathAbsolute,
+            logLevel: options.logLevel,
+            imageKey,
+            imageGenerationSize,
+          })
+          if (codexLbSuccess) return true
+
+          log(options.logLevel, 2, "contentProcess", `Falling back to local Codex for: ${imageKey}`)
+        }
+
+        const codexSuccess = await generateViaCodex({
           prompt: promptText,
+          targetDir,
           targetPathAbsolute,
           logLevel: options.logLevel,
           imageKey,
           imageGenerationSize,
         })
-        if (codexLbSuccess) return true
-
-        log(options.logLevel, 2, "contentProcess", `Falling back to local Codex for: ${imageKey}`)
+        if (codexSuccess) return true
+      } catch (err) {
+        log(options.logLevel, 0, "contentProcess", `Codex call failed: ${err}. No placeholder fallback created.`)
       }
-
-      return await generateViaCodex({
-        prompt: promptText,
-        targetDir,
-        targetPathAbsolute,
-        logLevel: options.logLevel,
-        imageKey,
-        imageGenerationSize,
-      })
-    } catch (err) {
-      log(options.logLevel, 0, "contentProcess", `Codex call failed: ${err}. No placeholder fallback created.`)
-      return false
     }
+
+    log(options.logLevel, 0, "contentProcess", `Image generation failed after ${IMAGE_GENERATION_ATTEMPTS} attempts for: ${imageKey}`)
+    return false
   } else {
     log(options.logLevel, 2, "contentProcess", `Codex image generation disabled. Prompt saved for: ${imageKey}`)
     return false
