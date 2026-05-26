@@ -1,6 +1,6 @@
 {
   "name": "@adaptive-ds/website-content-pipeline",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Markdown content processing pipeline for scheduled website articles, generated content lists, raw public content, and featured images.",
   "homepage": "https://github.com/david1gp/website-content-pipeline",
   "repository": {
