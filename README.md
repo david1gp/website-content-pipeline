@@ -11,7 +11,7 @@ Reusable markdown content pipeline for websites that publish scheduled articles 
 - generates a typed `contentList.ts` with metadata and markdown file paths
 - marks future-dated content as rendered but not published at build time
 - detects missing featured images and creates prompt files
-- can ask a codex-lb image endpoint to generate missing images, falling back to local `codex`
+- can ask a codex-lb image endpoint to generate missing images, falling back to local `codex`, with retries and per-attempt timeouts
 - optimizes content images through `@adaptive-ds/assets-optimizer`
 - optionally syncs source content and public content with `rclone`
 
@@ -195,7 +195,7 @@ Source images should live under transform folders consumed by `@adaptive-ds/asse
 
 ```text
 images/
-  1920x1080_webp/
+  1920x960_webp/
     2026-05-20-example-post.jpg
 ```
 
@@ -205,7 +205,7 @@ When an image is missing, the generated image target is:
 images/1920x960_webp/{imageKey}.png
 ```
 
-Set `codexLbUrl` or `CODEX_LB_URL` to use an OpenAI-compatible codex-lb image endpoint first. The API token is read from `CODEX_LB_API_TOKEN` or `~/.config/opencode/codex-lb-api-key`. If codex-lb fails, the pipeline falls back to local `codex`. If one missing image cannot be generated, remaining image-generation attempts are skipped for that run.
+Set `codexLbUrl` or `CODEX_LB_URL` to use an OpenAI-compatible codex-lb image endpoint first. The API token is read from `CODEX_LB_API_TOKEN` or `~/.config/opencode/codex-lb-api-key`. If codex-lb fails, the pipeline falls back to local `codex`. Each missing image gets up to 3 generation attempts, and each codex-lb or local `codex` call has a 5 minute timeout. If one missing image cannot be generated after those attempts, remaining image-generation attempts are skipped for that run.
 
 Generated image prompts use a configurable `imagePromptTemplatePrefix`, then pass the article title as `Article headline/title`. The article body is not included in image prompts. The default target and generation size is `1920x960` for 2:1 website hero images; override `imageGenerationSize` or `CONTENT_IMAGE_GENERATION_SIZE` if your image endpoint requires another size.
 
