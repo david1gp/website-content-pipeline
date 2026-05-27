@@ -48,7 +48,6 @@ pnpm-lock.yaml
 # Generated local content folders
 /content
 /images
-/public
 
 # ai, ethereal and auto generated
 .roo/rules-code
