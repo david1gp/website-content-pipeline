@@ -6,7 +6,8 @@ import type { ContentFilenameParts } from "./types.js"
 export function normalizeFrontmatter(data: Record<string, unknown>, parsedFilename: ContentFilenameParts): Frontmatter {
   const slug = stringValue(data.slug) ?? parsedFilename.slug
   const title = stringValue(data.title) ?? titleFromSlug(slug)
-  const description = stringValue(data.description) ?? stringValue(data.excerpt) ?? `Artikel über ${slug.replace(/-/g, " ")}`
+  const description =
+    stringValue(data.description) ?? stringValue(data.excerpt) ?? `Artikel über ${slug.replace(/-/g, " ")}`
 
   return {
     title,

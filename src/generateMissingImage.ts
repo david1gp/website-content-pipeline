@@ -1,6 +1,6 @@
+import { spawn } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
-import { spawn } from "node:child_process"
 import { DEFAULT_CONTENT_IMAGE_GENERATION_SIZE } from "./defaults.js"
 import { ensureDir } from "./ensureDir.js"
 import { log } from "./log.js"
@@ -66,7 +66,12 @@ async function generateViaCodexLb(options: {
 
   if (!response.ok) {
     const body = await response.text().catch(() => "")
-    log(options.logLevel, 0, "contentProcess", `codexLb image generation failed for ${options.imageKey}: HTTP ${response.status} ${body}`)
+    log(
+      options.logLevel,
+      0,
+      "contentProcess",
+      `codexLb image generation failed for ${options.imageKey}: HTTP ${response.status} ${body}`,
+    )
     return false
   }
 
@@ -79,7 +84,12 @@ async function generateViaCodexLb(options: {
 
   writeFileSync(options.targetPathAbsolute, Buffer.from(b64, "base64"))
   if (!isValidImage(options.targetPathAbsolute)) {
-    log(options.logLevel, 0, "contentProcess", `codexLb wrote an invalid image for ${options.imageKey}: ${options.targetPathAbsolute}`)
+    log(
+      options.logLevel,
+      0,
+      "contentProcess",
+      `codexLb wrote an invalid image for ${options.imageKey}: ${options.targetPathAbsolute}`,
+    )
     return false
   }
 
@@ -211,7 +221,12 @@ export async function generateMissingImage(
     for (let attempt = 1; attempt <= IMAGE_GENERATION_ATTEMPTS; attempt++) {
       try {
         if (attempt > 1) {
-          log(options.logLevel, 1, "contentProcess", `Retrying image generation for ${imageKey} (${attempt}/${IMAGE_GENERATION_ATTEMPTS})`)
+          log(
+            options.logLevel,
+            1,
+            "contentProcess",
+            `Retrying image generation for ${imageKey} (${attempt}/${IMAGE_GENERATION_ATTEMPTS})`,
+          )
         }
 
         if (options.codexLbUrl) {
@@ -243,7 +258,12 @@ export async function generateMissingImage(
       }
     }
 
-    log(options.logLevel, 0, "contentProcess", `Image generation failed after ${IMAGE_GENERATION_ATTEMPTS} attempts for: ${imageKey}`)
+    log(
+      options.logLevel,
+      0,
+      "contentProcess",
+      `Image generation failed after ${IMAGE_GENERATION_ATTEMPTS} attempts for: ${imageKey}`,
+    )
     return false
   } else {
     log(options.logLevel, 2, "contentProcess", `Codex image generation disabled. Prompt saved for: ${imageKey}`)

@@ -96,3 +96,9 @@ export type ContentProcessResult = {
   entries: ContentEntry[]
   missingImages: MissingImage[]
 }
+
+export type ContentCleanResult = {
+  scanned: number
+  changed: string[]
+  unchanged: number
+}

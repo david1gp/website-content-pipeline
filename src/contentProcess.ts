@@ -4,12 +4,11 @@ import { bisync, runRclone } from "@adaptive-ds/assets-optimizer"
 import matter from "gray-matter"
 import { parse } from "valibot"
 import { assignOptimizedImagePaths } from "./assignOptimizedImagePaths.js"
-import { cleanFrontmatter } from "./cleanFrontmatter.js"
 import { createImagePrompt } from "./createImagePrompt.js"
 import { DEFAULT_CONTENT_IMAGE_TRANSFORM_DIR } from "./defaults.js"
 import { ensureDir } from "./ensureDir.js"
-import { findSourceImage } from "./findSourceImage.js"
 import { FrontmatterSchema } from "./FrontmatterSchema.js"
+import { findSourceImage } from "./findSourceImage.js"
 import { generateContentListCode } from "./generateContentListCode.js"
 import { generateMissingImage } from "./generateMissingImage.js"
 import { log } from "./log.js"
@@ -36,8 +35,16 @@ function writeImagePromptFile(options: {
   ensureDir(options.imagePromptsDir)
   const promptFile = join(options.imagePromptsDir, `${options.imageKey}.md`)
   const promptContent = `# Image Generation Prompt: ${options.imageKey}\n\n${options.prompt}\n\nTarget file: ${options.targetPath}\n`
-  writeFileSync(promptFile, promptContent, "utf-8")
-  log(options.logLevel ?? 3, 2, "contentProcess", `Created image prompt: ${promptFile}`)
+  let existingPrompt: string | null = null
+  try {
+    existingPrompt = readFileSync(promptFile, "utf-8")
+  } catch {
+    existingPrompt = null
+  }
+  if (existingPrompt !== promptContent) {
+    writeFileSync(promptFile, promptContent, "utf-8")
+    log(options.logLevel ?? 3, 2, "contentProcess", `Created image prompt: ${promptFile}`)
+  }
 }
 
 export async function contentProcess(
@@ -61,8 +68,33 @@ export async function contentProcess(
       await bisync(config.contentDir, config.sourceRemote, { cwd: config.cwd, resync: flags.resync })
       log(config.logLevel, 2, "contentProcess", "Sync completed.")
     } catch (syncErr) {
-      log(config.logLevel, 0, "contentProcess", `Sync failed: ${syncErr}. Continuing without sync.`)
-      if (flags.strict) process.exit(1)
+      // A bisync can abort when its listing baseline is missing/stale (e.g. first
+      // run, or a prior crash). The fix in that case is a one-time --resync to
+      // re-establish the baseline, so auto-retry once with resync before giving up.
+      // (Skip the retry if this run already requested --resync.)
+      if (flags.resync) {
+        log(config.logLevel, 0, "contentProcess", `Sync failed: ${syncErr}. Continuing without sync.`)
+        if (flags.strict) process.exit(1)
+      } else {
+        log(
+          config.logLevel,
+          0,
+          "contentProcess",
+          `Sync failed: ${syncErr}. Retrying once with --resync to re-establish the baseline.`,
+        )
+        try {
+          await bisync(config.contentDir, config.sourceRemote, { cwd: config.cwd, resync: true })
+          log(config.logLevel, 2, "contentProcess", "Sync completed after --resync recovery.")
+        } catch (resyncErr) {
+          log(
+            config.logLevel,
+            0,
+            "contentProcess",
+            `Sync failed after --resync retry: ${resyncErr}. Continuing without sync.`,
+          )
+          if (flags.strict) process.exit(1)
+        }
+      }
     }
   }
 
@@ -73,9 +105,19 @@ export async function contentProcess(
   if (flags.articleIndex !== null) {
     const selected = contentFiles[flags.articleIndex - 1]
     if (!selected) {
-      log(config.logLevel, 0, "contentProcess", `No content file found for --index=${flags.articleIndex}; no image generation will run.`)
+      log(
+        config.logLevel,
+        0,
+        "contentProcess",
+        `No content file found for --index=${flags.articleIndex}; no image generation will run.`,
+      )
     } else {
-      log(config.logLevel, 2, "contentProcess", `Generating missing image only for article #${flags.articleIndex}: ${selected}`)
+      log(
+        config.logLevel,
+        2,
+        "contentProcess",
+        `Generating missing image only for article #${flags.articleIndex}: ${selected}`,
+      )
     }
   }
 
@@ -141,22 +183,21 @@ export async function contentProcess(
       missingImages.push({ imageKey, prompt: imagePrompt, targetPath })
     }
 
-    const normalizedFrontmatter = cleanFrontmatter({
-      title: frontmatter.title,
-      description: frontmatter.description,
-      publishedAt: frontmatter.publishedAt,
-      updatedAt: frontmatter.updatedAt,
-      author: frontmatter.author,
-      slug: frontmatter.slug,
-      image: frontmatter.image,
-      imageAlt: frontmatter.imageAlt,
-    })
-
-    const normalized = matter.stringify(parsed.content || "", normalizedFrontmatter)
-    writeFileSync(filePath, normalized, "utf-8")
+    // contentProcess never mutates the source .md; frontmatter is canonicalized
+    // only via the explicit contentClean step. We read + normalize in memory to
+    // build the contentList entry, and copy the raw source to the public dir as
+    // a build artifact when (and only when) it differs from the source dir.
     const publicContentFilePath = join(config.publicContentDir, file)
     if (resolve(config.cwd, filePath) !== resolve(config.cwd, publicContentFilePath)) {
-      cpSync(filePath, publicContentFilePath)
+      let existingPublic: string | null = null
+      try {
+        existingPublic = readFileSync(publicContentFilePath, "utf-8")
+      } catch {
+        existingPublic = null
+      }
+      if (existingPublic !== raw) {
+        cpSync(filePath, publicContentFilePath)
+      }
     }
 
     entries.push({
@@ -194,7 +235,12 @@ export async function contentProcess(
       imageGenerationSize: config.imageGenerationSize,
     })
     if (!imageGenerated) {
-      log(config.logLevel, 0, "contentProcess", `Stopping missing-image generation after failure for: ${missingImage.imageKey}`)
+      log(
+        config.logLevel,
+        0,
+        "contentProcess",
+        `Stopping missing-image generation after failure for: ${missingImage.imageKey}`,
+      )
       break
     }
   }
@@ -232,7 +278,10 @@ export async function contentProcess(
   if (flags.sync && config.destinationRemote) {
     log(config.logLevel, 2, "contentProcess", `Syncing public content to remote: ${config.destinationRemote}`)
     try {
-      await runRclone(["sync", config.publicBlogDir, config.destinationRemote, "--header-upload", config.cacheControl], config.cwd)
+      await runRclone(
+        ["sync", config.publicBlogDir, config.destinationRemote, "--header-upload", config.cacheControl],
+        config.cwd,
+      )
       log(config.logLevel, 2, "contentProcess", "Public content sync completed.")
     } catch (syncErr) {
       log(config.logLevel, 0, "contentProcess", `Public content sync failed: ${syncErr}. Continuing.`)

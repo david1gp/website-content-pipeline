@@ -1,10 +1,10 @@
 import { isAbsolute, join, resolve } from "node:path"
+import { DEFAULT_IMAGE_PROMPT_TEMPLATE_PREFIX } from "./createImagePrompt.js"
 import {
   DEFAULT_CONTENT_CACHE_CONTROL,
   DEFAULT_CONTENT_IMAGE_GENERATION_SIZE,
   DEFAULT_CONTENT_LIST_GENERATED_BY,
 } from "./defaults.js"
-import { DEFAULT_IMAGE_PROMPT_TEMPLATE_PREFIX } from "./createImagePrompt.js"
 import { getBuildDate } from "./getBuildDate.js"
 import { normalizePublicPathBase } from "./normalizePublicPathBase.js"
 import type { ContentProcessOptions, NormalizedContentProcessOptions } from "./types.js"
