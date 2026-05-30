@@ -85,7 +85,8 @@ See `ContentProcessOptions` in `src/types.ts` for the full set of options. Key f
 bun run build      # compile to dist/
 bun run typecheck  # type-check without emit
 bun run format     # biome check --write
-bun run release    # build + publish to npm + tag + GitHub release (ops/release.sh)
+bun run release    # bump version, build, commit, tag, push, GitHub release (ops/release.sh)
+                   # pushing the v* tag triggers .github/workflows/publish.yml, which publishes to npm
 ```
 
 ## Exports
