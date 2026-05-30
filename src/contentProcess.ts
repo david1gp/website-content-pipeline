@@ -1,5 +1,5 @@
 import { cpSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
-import { dirname, isAbsolute, join, relative, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
 import { bisync, runRclone } from "@adaptive-ds/assets-optimizer"
 import matter from "gray-matter"
 import { parse } from "valibot"
@@ -17,15 +17,11 @@ import { normalizeFrontmatter } from "./normalizeFrontmatter.js"
 import { optimizeContentImages } from "./optimizeContentImages.js"
 import { parseContentFilename } from "./parseContentFilename.js"
 import { parseContentProcessFlags } from "./parseContentProcessFlags.js"
+import { projectRelativePath } from "./projectRelativePath.js"
 import type { ContentEntry, ContentProcessOptions, ContentProcessResult, MissingImage } from "./types.js"
 
-function projectRelativePath(cwd: string, path: string) {
-  const absolutePath = isAbsolute(path) ? path : resolve(cwd, path)
-  const normalized = relative(cwd, absolutePath).replace(/\\/g, "/")
-  return normalized.startsWith(".") ? normalized : `./${normalized}`
-}
-
 function writeImagePromptFile(options: {
+  cwd: string
   imagePromptsDir: string
   imageKey: string
   prompt: string
@@ -34,7 +30,8 @@ function writeImagePromptFile(options: {
 }) {
   ensureDir(options.imagePromptsDir)
   const promptFile = join(options.imagePromptsDir, `${options.imageKey}.md`)
-  const promptContent = `# Image Generation Prompt: ${options.imageKey}\n\n${options.prompt}\n\nTarget file: ${options.targetPath}\n`
+  const targetFile = projectRelativePath(options.cwd, options.targetPath)
+  const promptContent = `# Image Generation Prompt: ${options.imageKey}\n\n${options.prompt}\n\nTarget file: ${targetFile}\n`
   let existingPrompt: string | null = null
   try {
     existingPrompt = readFileSync(promptFile, "utf-8")
@@ -170,6 +167,7 @@ export async function contentProcess(
     const shouldGenerateImageForArticle = flags.articleIndex === null || flags.articleIndex === fileIndex + 1
     if (config.generateImagePrompts) {
       writeImagePromptFile({
+        cwd: config.cwd,
         imagePromptsDir: config.imagePromptsDir,
         imageKey,
         prompt: imagePrompt,

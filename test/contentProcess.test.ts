@@ -65,6 +65,19 @@ describe("contentProcess (read-only source)", () => {
     expect(generated).toContain("photovoltaik-grevenbroich")
   })
 
+  test("image prompt embeds a project-relative target path, not an absolute one", async () => {
+    const filePath = join(contentDir, FILE)
+    writeFileSync(filePath, MESSY, "utf-8")
+
+    await contentProcess({ ...baseOptions(), cwd: root, generateImagePrompts: true }, [])
+
+    const promptFile = join(root, "image-prompts", `${FILE.replace(/\.md$/, "")}.md`)
+    const prompt = readFileSync(promptFile, "utf-8")
+    // relative to the project root, POSIX, "./"-prefixed — never the absolute checkout path
+    expect(prompt).toContain("Target file: ./images/1920x960_webp/2026-05-20-photovoltaik-grevenbroich.png")
+    expect(prompt).not.toContain(root)
+  })
+
   test("running twice leaves all source mtimes unchanged (bisync regression)", async () => {
     const filePath = join(contentDir, FILE)
     writeFileSync(filePath, MESSY, "utf-8")

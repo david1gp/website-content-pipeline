@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path"
 import { DEFAULT_CONTENT_IMAGE_GENERATION_SIZE } from "./defaults.js"
 import { ensureDir } from "./ensureDir.js"
 import { log } from "./log.js"
+import { projectRelativePath } from "./projectRelativePath.js"
 import type { LogLevel, MissingImage } from "./types.js"
 
 const DEFAULT_CODEX_LB_MODEL = "gpt-image-2" as const
@@ -212,7 +213,8 @@ export async function generateMissingImage(
   if (options.generateImagePrompts) {
     ensureDir(options.imagePromptsDir)
     const promptFile = join(options.imagePromptsDir, `${imageKey}.md`)
-    const promptContent = `# Image Generation Prompt: ${imageKey}\n\n${promptText}\n\nTarget file: ${targetPathAbsolute}\n`
+    const targetFile = projectRelativePath(options.cwd, targetPathAbsolute)
+    const promptContent = `# Image Generation Prompt: ${imageKey}\n\n${promptText}\n\nTarget file: ${targetFile}\n`
     writeFileSync(promptFile, promptContent, "utf-8")
     log(options.logLevel, 2, "contentProcess", `Created image prompt: ${promptFile}`)
   }
