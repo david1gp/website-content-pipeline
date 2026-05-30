@@ -13,7 +13,6 @@ export type ContentEntry = {
   updatedAt: string | null
   author: string | null
   imageAlt: string | null
-  isPublishedAtBuild: boolean
 }
 
 export type ContentFilenameParts = {

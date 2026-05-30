@@ -213,14 +213,13 @@ export async function contentProcess(
       updatedAt: frontmatter.updatedAt ?? null,
       author: frontmatter.author ?? null,
       imageAlt,
-      isPublishedAtBuild: frontmatter.publishedAt < config.buildDate,
     })
 
     log(
       config.logLevel,
       3,
       "contentProcess",
-      `Processed: ${file} (published: ${frontmatter.publishedAt}, build: ${config.buildDate}, isPublished: ${frontmatter.publishedAt < config.buildDate})`,
+      `Processed: ${file} (published: ${frontmatter.publishedAt}, published-as-of ${config.buildDate}: ${frontmatter.publishedAt <= config.buildDate})`,
     )
   }
 
