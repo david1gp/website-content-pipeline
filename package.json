@@ -46,7 +46,7 @@
     "format": "bunx biome check --write src"
   },
   "dependencies": {
-    "@adaptive-ds/assets-optimizer": "^0.6.1",
+    "@adaptive-ds/assets-optimizer": "^0.10.0",
     "gray-matter": "^4.0.3",
     "valibot": "^1.4.0"
   },
