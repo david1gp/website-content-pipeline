@@ -62,7 +62,10 @@ export async function contentProcess(
   if (flags.sync && config.sourceRemote) {
     log(config.logLevel, 2, "contentProcess", `Syncing content from remote: ${config.sourceRemote}`)
     try {
-      await bisync(config.contentDir, config.sourceRemote, { cwd: config.cwd, resync: flags.resync })
+      await bisync(config.contentDir, config.sourceRemote, {
+        cwd: config.cwd,
+        resync: flags.resync,
+      })
       log(config.logLevel, 2, "contentProcess", "Sync completed.")
     } catch (syncErr) {
       // A bisync can abort when its listing baseline is missing/stale (e.g. first
@@ -80,7 +83,10 @@ export async function contentProcess(
           `Sync failed: ${syncErr}. Retrying once with --resync to re-establish the baseline.`,
         )
         try {
-          await bisync(config.contentDir, config.sourceRemote, { cwd: config.cwd, resync: true })
+          await bisync(config.contentDir, config.sourceRemote, {
+            cwd: config.cwd,
+            resync: true,
+          })
           log(config.logLevel, 2, "contentProcess", "Sync completed after --resync recovery.")
         } catch (resyncErr) {
           log(

@@ -76,7 +76,9 @@ async function generateViaCodexLb(options: {
     return false
   }
 
-  const payload = (await response.json()) as { data?: Array<{ b64_json?: string }> }
+  const payload = (await response.json()) as {
+    data?: Array<{ b64_json?: string }>
+  }
   const b64 = payload.data?.[0]?.b64_json
   if (!b64) {
     log(options.logLevel, 0, "contentProcess", `codexLb image generation returned no b64_json for ${options.imageKey}.`)
