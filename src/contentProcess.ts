@@ -9,6 +9,7 @@ import { DEFAULT_CONTENT_IMAGE_TRANSFORM_DIR } from "./defaults.js"
 import { ensureDir } from "./ensureDir.js"
 import { FrontmatterSchema } from "./FrontmatterSchema.js"
 import { findSourceImage } from "./findSourceImage.js"
+import { formatContentListWithBiome } from "./formatContentListWithBiome.js"
 import { generateContentListCode } from "./generateContentListCode.js"
 import { generateMissingImage } from "./generateMissingImage.js"
 import { log } from "./log.js"
@@ -276,6 +277,12 @@ export async function contentProcess(
 
   ensureDir(dirname(config.contentListOutputPath))
   writeFileSync(config.contentListOutputPath, contentListCode, "utf-8")
+  if (config.formatContentListWithBiome) {
+    formatContentListWithBiome({
+      contentListOutputPath: config.contentListOutputPath,
+      cwd: config.cwd,
+    })
+  }
   log(config.logLevel, 2, "contentProcess", `Generated ${config.contentListOutputPath} with ${entries.length} entries`)
 
   if (flags.sync && config.destinationRemote) {

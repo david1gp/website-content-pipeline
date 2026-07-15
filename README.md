@@ -28,6 +28,7 @@ await contentProcess({
   imageOriginalsDir: "./images",
   imageOptimizedDir: "./public/images",
   imagePromptsDir: "./src/app/content/image-prompts",
+  formatContentListWithBiome: true,
 })
 ```
 
@@ -78,6 +79,7 @@ See `ContentProcessOptions` in `src/types.ts` for the full set of options. Key f
 - `sourceRemote`, `destinationRemote`: rclone remotes for bisync/publish
 - `publicContentDir`, `publicPathBase`: where raw content is copied and its public URL base
 - `optimizeImages`, `generateMissingImages`, `generateImagePrompts`: toggles
+- `formatContentListWithBiome`: opt in to run `bunx --no-install biome format --write` on the generated list, using the consuming project's Biome config at `cwd`. Requires `@biomejs/biome` to be installed by that project.
 
 ## Scripts
 

@@ -59,6 +59,8 @@ export type ContentProcessOptions = {
   imageGenerationSize?: string
   imagePromptTemplatePrefix?: string
   contentListGeneratedBy?: string
+  /** Format the generated content list with the consuming project's Biome configuration. */
+  formatContentListWithBiome?: boolean
 }
 
 export type NormalizedContentProcessOptions = Required<
@@ -86,6 +88,7 @@ export type NormalizedContentProcessOptions = Required<
     | "imageGenerationSize"
     | "imagePromptTemplatePrefix"
     | "contentListGeneratedBy"
+    | "formatContentListWithBiome"
   >
 > &
   Pick<ContentProcessOptions, "sourceRemote" | "destinationRemote">

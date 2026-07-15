@@ -46,5 +46,6 @@ export function normalizeContentProcessOptions(options: ContentProcessOptions): 
       options.imageGenerationSize ?? process.env.CONTENT_IMAGE_GENERATION_SIZE ?? DEFAULT_CONTENT_IMAGE_GENERATION_SIZE,
     imagePromptTemplatePrefix: options.imagePromptTemplatePrefix ?? DEFAULT_IMAGE_PROMPT_TEMPLATE_PREFIX,
     contentListGeneratedBy: options.contentListGeneratedBy ?? DEFAULT_CONTENT_LIST_GENERATED_BY,
+    formatContentListWithBiome: options.formatContentListWithBiome ?? false,
   }
 }

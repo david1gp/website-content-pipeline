@@ -94,4 +94,19 @@ describe("contentProcess (read-only source)", () => {
       expect(statSync(join(contentDir, f)).mtimeMs).toBe(mtime)
     }
   })
+
+  test("optionally formats the generated list with the project's Biome config", async () => {
+    writeFileSync(join(contentDir, FILE), MESSY, "utf-8")
+    writeFileSync(
+      join(root, "biome.json"),
+      JSON.stringify({ javascript: { formatter: { semicolons: "asNeeded", quoteStyle: "single" } } }),
+      "utf-8",
+    )
+
+    await contentProcess({ ...baseOptions(), cwd: root, formatContentListWithBiome: true }, [])
+
+    const generated = readFileSync(join(root, "contentList.ts"), "utf-8")
+    expect(generated).toContain("import type { ContentEntry } from '@adaptive-ds/website-content-pipeline'")
+    expect(generated).not.toContain(";")
+  })
 })
