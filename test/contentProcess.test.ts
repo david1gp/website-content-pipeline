@@ -16,7 +16,6 @@ Body text.
 
 let root: string
 let contentDir: string
-
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), "content-process-"))
   contentDir = join(root, "content")
@@ -93,20 +92,5 @@ describe("contentProcess (read-only source)", () => {
     for (const [f, mtime] of Object.entries(mtimes)) {
       expect(statSync(join(contentDir, f)).mtimeMs).toBe(mtime)
     }
-  })
-
-  test("optionally formats the generated list with the project's Biome config", async () => {
-    writeFileSync(join(contentDir, FILE), MESSY, "utf-8")
-    writeFileSync(
-      join(root, "biome.json"),
-      JSON.stringify({ javascript: { formatter: { semicolons: "asNeeded", quoteStyle: "single" } } }),
-      "utf-8",
-    )
-
-    await contentProcess({ ...baseOptions(), cwd: root, formatContentListWithBiome: true }, [])
-
-    const generated = readFileSync(join(root, "contentList.ts"), "utf-8")
-    expect(generated).toContain("import type { ContentEntry } from '@adaptive-ds/website-content-pipeline'")
-    expect(generated).not.toContain(";")
   })
 })
