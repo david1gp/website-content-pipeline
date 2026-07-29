@@ -69,7 +69,7 @@ mkdir -p "$CHANGELOGS_DIR"
 FULL_CHANGELOG="## [${NEW_VERSION}] - ${DATE}
 
 ${CHANGELOG_BODY}"
-echo "$FULL_CHANGELOG" > "$CHANGELOG_FILE"
+echo "$FULL_CHANGELOG" >"$CHANGELOG_FILE"
 echo "📄 Changelog saved to: $CHANGELOG_FILE"
 
 # --- Step 4: Changelog ---
@@ -81,7 +81,7 @@ bun run build
 
 # --- Step 6: Update package.json ---
 echo "🔄 Updating $PACKAGE_JSON to v$NEW_VERSION..."
-jq --arg v "$NEW_VERSION" '.version = $v' "$PACKAGE_JSON" > tmp.$$.json && mv tmp.$$.json "$PACKAGE_JSON"
+jq --arg v "$NEW_VERSION" '.version = $v' "$PACKAGE_JSON" >tmp.$$.json && mv tmp.$$.json "$PACKAGE_JSON"
 TAG="v$NEW_VERSION"
 
 # --- Step 7: Git Commit and push ---
@@ -102,4 +102,4 @@ git branch -f released
 
 echo "✅ Release v$NEW_VERSION complete!"
 echo "📄 Changelog: $CHANGELOG_FILE"
-echo "🔗 GitHub: https://github.com/$REPO_NAME/releases/tag/$TAG"
+echo "🔗 GitHub: https://github.com$(echo "$REPO_URL" | sed 's/.*github.com//')/releases/tag/$TAG"
