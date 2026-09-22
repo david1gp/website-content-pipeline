@@ -41,7 +41,7 @@
   ],
   "scripts": {
     "build": "rm -rf ./dist && bun tsc -p ./tsconfig.lib.json",
-    "typecheck": "bunx tsgo --noEmit",
+    "typecheck": "bunx tsc --noEmit",
     "release": "bash ./ops/release.sh",
     "format": "biome format --write src test package.json tsconfig.json tsconfig.lib.json biome.json"
   },
